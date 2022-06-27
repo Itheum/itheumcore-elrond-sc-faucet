@@ -1,6 +1,6 @@
 #![no_std]
 #![feature(generic_associated_types)]
-const FIVE_MIN: u64 = 5 * 60;
+const TWO_MIN: u64 = 2 * 60;
 
 mod claims;
 
@@ -39,7 +39,7 @@ pub trait DevNetFaucet {
         let reward_token = self.reward_token().get();
         let current_timestamp = self.blockchain().get_block_timestamp();
         require!(
-            self.last_faucet(&caller).get() <= current_timestamp - FIVE_MIN,
+            self.last_faucet(&caller).get() <= current_timestamp - TWO_MIN,
             "Cannot claim tokens so early after last claim"
         );
         self.last_faucet(&caller).set(current_timestamp);
@@ -52,6 +52,22 @@ pub trait DevNetFaucet {
         );
         self.claims_proxy(self.claims_address().get())
             .add_claim(&caller, claims::ClaimType::Reward)
+            .add_token_transfer(
+                reward_token.clone(),
+                0,
+                BigUint::from(10u64) * BigUint::from(10u64).pow(18u32),
+            )
+            .execute_on_dest_context();
+        self.claims_proxy(self.claims_address().get())
+            .add_claim(&caller, claims::ClaimType::Airdrop)
+            .add_token_transfer(
+                reward_token.clone(),
+                0,
+                BigUint::from(10u64) * BigUint::from(10u64).pow(18u32),
+            )
+            .execute_on_dest_context();
+        self.claims_proxy(self.claims_address().get())
+            .add_claim(&caller, claims::ClaimType::Allocation)
             .add_token_transfer(
                 reward_token,
                 0,
