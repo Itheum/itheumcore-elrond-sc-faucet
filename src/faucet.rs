@@ -1,5 +1,4 @@
 #![no_std]
-#![feature(generic_associated_types)]
 const TWO_MIN: u64 = 2 * 60;
 
 mod claims;
@@ -24,7 +23,7 @@ pub trait DevNetFaucet {
         let new_owner = self.blockchain().get_owner_address();
         self.send()
             .change_owner_address(self.claims_address().get(), &new_owner)
-            .execute_on_dest_context();
+            .execute_on_dest_context::<()>();
     }
 
     #[only_owner]
@@ -43,37 +42,36 @@ pub trait DevNetFaucet {
             "Cannot claim tokens so early after last claim"
         );
         self.last_faucet(&caller).set(current_timestamp);
-        self.send().direct(
+        self.send().direct_esdt(
             &caller,
             &reward_token,
             0u64,
-            &(BigUint::from(10u64) * BigUint::from(10u64).pow(18u32)),
-            &[],
+            &(BigUint::from(50u64) * BigUint::from(10u64).pow(18u32)),
         );
         self.claims_proxy(self.claims_address().get())
             .add_claim(&caller, claims::ClaimType::Reward)
-            .add_token_transfer(
+            .with_esdt_transfer(EsdtTokenPayment::new(
                 reward_token.clone(),
-                0,
+                0u64,
                 BigUint::from(10u64) * BigUint::from(10u64).pow(18u32),
-            )
-            .execute_on_dest_context();
+            ))
+            .execute_on_dest_context::<()>();
         self.claims_proxy(self.claims_address().get())
             .add_claim(&caller, claims::ClaimType::Airdrop)
-            .add_token_transfer(
+            .with_esdt_transfer(EsdtTokenPayment::new(
                 reward_token.clone(),
-                0,
+                0u64,
                 BigUint::from(10u64) * BigUint::from(10u64).pow(18u32),
-            )
-            .execute_on_dest_context();
+            ))
+            .execute_on_dest_context::<()>();
         self.claims_proxy(self.claims_address().get())
             .add_claim(&caller, claims::ClaimType::Allocation)
-            .add_token_transfer(
-                reward_token,
-                0,
+            .with_esdt_transfer(EsdtTokenPayment::new(
+                reward_token.clone(),
+                0u64,
                 BigUint::from(10u64) * BigUint::from(10u64).pow(18u32),
-            )
-            .execute_on_dest_context();
+            ))
+            .execute_on_dest_context::<()>();
     }
 
     #[storage_mapper("rewardToken")]
