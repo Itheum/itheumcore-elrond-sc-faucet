@@ -1,14 +1,15 @@
-elrond_wasm::imports!();
-elrond_wasm::derive_imports!();
+multiversx_sc::imports!();
+multiversx_sc::derive_imports!();
 
 #[derive(TopEncode, TopDecode, NestedEncode, NestedDecode, PartialEq, Clone, Debug, TypeAbi)]
 pub enum ClaimType {
     Reward,
     Airdrop,
     Allocation,
+    Royalties
 }
 
-#[elrond_wasm::proxy]
+#[multiversx_sc::proxy]
 pub trait ClaimsContract {
     #[payable("*")]
     #[endpoint(addClaim)]

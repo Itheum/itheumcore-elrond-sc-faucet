@@ -1,15 +1,18 @@
 #![no_std]
-const TWO_MIN: u64 = 2 * 60;
+const TIME_LIMIT: u64 = 120 * 60; // 120 min
 
 mod claims;
 
-elrond_wasm::imports!();
-elrond_wasm::derive_imports!();
+multiversx_sc::imports!();
+multiversx_sc::derive_imports!();
 
-#[elrond_wasm::contract]
+#[multiversx_sc::contract]
 pub trait DevNetFaucet {
     #[init]
     fn init(&self) {}
+
+    #[upgrade]
+    fn upgrade(&self) {}
 
     #[only_owner]
     #[endpoint(setClaimsAddress)]
@@ -38,7 +41,7 @@ pub trait DevNetFaucet {
         let reward_token = self.reward_token().get();
         let current_timestamp = self.blockchain().get_block_timestamp();
         require!(
-            self.last_faucet(&caller).get() <= current_timestamp - TWO_MIN,
+            self.last_faucet(&caller).get() <= current_timestamp - TIME_LIMIT,
             "Cannot claim tokens so early after last claim"
         );
         self.last_faucet(&caller).set(current_timestamp);
@@ -46,14 +49,14 @@ pub trait DevNetFaucet {
             &caller,
             &reward_token,
             0u64,
-            &(BigUint::from(50u64) * BigUint::from(10u64).pow(18u32)),
+            &(BigUint::from(1000u64) * BigUint::from(10u64).pow(18u32)),
         );
         self.claims_proxy(self.claims_address().get())
             .add_claim(&caller, claims::ClaimType::Reward)
             .with_esdt_transfer(EsdtTokenPayment::new(
                 reward_token.clone(),
                 0u64,
-                BigUint::from(10u64) * BigUint::from(10u64).pow(18u32),
+                BigUint::from(2u64) * BigUint::from(10u64).pow(18u32),
             ))
             .execute_on_dest_context::<()>();
         self.claims_proxy(self.claims_address().get())
@@ -61,7 +64,7 @@ pub trait DevNetFaucet {
             .with_esdt_transfer(EsdtTokenPayment::new(
                 reward_token.clone(),
                 0u64,
-                BigUint::from(10u64) * BigUint::from(10u64).pow(18u32),
+                BigUint::from(2u64) * BigUint::from(10u64).pow(18u32),
             ))
             .execute_on_dest_context::<()>();
         self.claims_proxy(self.claims_address().get())
@@ -69,7 +72,16 @@ pub trait DevNetFaucet {
             .with_esdt_transfer(EsdtTokenPayment::new(
                 reward_token.clone(),
                 0u64,
-                BigUint::from(10u64) * BigUint::from(10u64).pow(18u32),
+                BigUint::from(2u64) * BigUint::from(10u64).pow(18u32),
+            ))
+            .execute_on_dest_context::<()>();
+
+        self.claims_proxy(self.claims_address().get())
+            .add_claim(&caller, claims::ClaimType::Royalties)
+            .with_esdt_transfer(EsdtTokenPayment::new(
+                reward_token.clone(),
+                0u64,
+                BigUint::from(2u64) * BigUint::from(10u64).pow(18u32),
             ))
             .execute_on_dest_context::<()>();
     }
